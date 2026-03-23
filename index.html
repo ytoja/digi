@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Digiympäristö — Oppimispeli</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #f4f6f9;
+  --bg2:     #eaecf2;
+  --card:    #ffffff;
+  --ink:     #141c2b;
+  --ink2:    #2d3a52;
+  --muted:   #7a8aa8;
+  --border:  #dde2ed;
+  --green:   #0a7c55;
+  --green2:  #12b07a;
+  --green-bg:#e6f7f1;
+  --red:     #c0392b;
+  --red-bg:  #fdf0ee;
+  --blue:    #1a56db;
+  --blue-bg: #eff5ff;
+  --yellow:  #b45309;
+  --yellow-bg:#fffbeb;
+  --purple:  #6d28d9;
+  --purple-bg:#f5f3ff;
+  --r:       12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Space Grotesk',sans-serif;
+  background:var(--bg);color:var(--ink);
+  min-height:100vh;
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--ink);
+  padding:0 28px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+}
+.tb-logo{
+  font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;
+  color:#fff;display:flex;align-items:center;gap:8px;
+}
+.tb-logo-icon{
+  width:30px;height:30px;border-radius:6px;
+  background:linear-gradient(135deg,var(--green2),#0d9488);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;
+}
+.hud{display:flex;gap:10px;align-items:center}
+.hud-chip{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;padding:5px 12px;
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;color:rgba(255,255,255,.85);
+  font-weight:600;
+}
+.hud-chip.pts{color:#fbbf24}
+.hud-chip.streak{color:#f87171}
+.hud-chip.rank{color:#a78bfa}
+
+/* XP BAR */
+.xp-bar-wrap{
+  background:var(--ink2);padding:0 28px;
+  height:6px;display:flex;align-items:center;
+}
+.xp-track{flex:1;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--green2),#0d9488);border-radius:2px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+/* ── SCREENS ── */
+.screen{display:none}
+.screen.active{display:block;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.wrap{max-width:840px;margin:0 auto;padding:32px 20px 80px}
+
+/* ── INTRO ── */
+.intro-hero{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:40px;margin-bottom:20px;
+  position:relative;overflow:hidden;
+}
+.intro-hero::before{
+  content:'';position:absolute;top:0;right:0;
+  width:300px;height:300px;
+  background:radial-gradient(circle,rgba(18,176,122,.08) 0%,transparent 70%);
+  pointer-events:none;
+}
+.intro-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:'JetBrains Mono',monospace;font-size:.62rem;
+  letter-spacing:2px;text-transform:uppercase;
+  color:var(--green);background:var(--green-bg);
+  border:1px solid rgba(10,124,85,.2);border-radius:4px;padding:4px 10px;
+  margin-bottom:16px;
+}
+.intro-h1{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:clamp(1.8rem,4vw,2.8rem);line-height:1.1;
+  margin-bottom:10px;color:var(--ink);
+}
+.intro-h1 span{color:var(--green)}
+.intro-p{font-size:.92rem;color:var(--muted);line-height:1.65;max-width:500px;margin-bottom:24px}
+
+.crit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:28px}
+.crit-item{
+  display:flex;align-items:flex-start;gap:8px;
+  padding:10px 12px;border-radius:8px;
+  background:var(--bg);border:1px solid var(--border);
+  font-size:.78rem;line-height:1.4;color:var(--ink2);
+}
+.crit-icon{font-size:1rem;flex-shrink:0;margin-top:1px}
+
+.level-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:28px}
+.level-card{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:8px;padding:10px;text-align:center;
+}
+.lc-emoji{font-size:1.4rem;margin-bottom:3px}
+.lc-nimi{font-family:'Syne',sans-serif;font-size:.72rem;font-weight:700;color:var(--ink);margin-bottom:1px}
+.lc-pts{font-size:.65rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+
+.btn-aloita{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--ink);color:#fff;
+  border:none;border-radius:8px;
+  padding:13px 28px;
+  font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;
+  cursor:pointer;letter-spacing:.3px;
+  transition:all .15s;
+}
+.btn-aloita:hover{background:var(--ink2);transform:translateY(-1px)}
+
+/* ── OSA-VALINTA ── */
+.section-h{font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;margin-bottom:4px}
+.section-sub{font-size:.82rem;color:var(--muted);margin-bottom:16px}
+.osa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.osa-card{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--r);padding:20px;cursor:pointer;
+  transition:all .2s;text-align:left;
+}
+.osa-card:hover{border-color:var(--green2);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.osa-card.done{border-color:var(--green2);background:var(--green-bg)}
+.osa-icon{font-size:2rem;margin-bottom:8px}
+.osa-nimi{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;color:var(--ink);margin-bottom:4px}
+.osa-desc{font-size:.75rem;color:var(--muted);line-height:1.45;margin-bottom:8px}
+.osa-pts{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--green);font-weight:600}
+
+/* ── TEHTÄVÄ ── */
+.task-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;flex-wrap:wrap;gap:8px;
+}
+.task-meta{display:flex;align-items:center;gap:8px}
+.task-nro{
+  font-family:'JetBrains Mono',monospace;font-size:.62rem;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);
+}
+.task-pts-badge{
+  font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:600;
+  padding:3px 9px;border-radius:4px;
+  background:var(--yellow-bg);color:var(--yellow);
+  border:1px solid rgba(180,83,9,.15);
+}
+.btn-teoria{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--blue-bg);border:1px solid rgba(26,86,219,.2);
+  color:var(--blue);border-radius:6px;
+  padding:6px 12px;font-size:.75rem;font-weight:600;
+  cursor:pointer;transition:all .15s;
+}
+.btn-teoria:hover{background:#dbeafe}
+
+.dots-row{display:flex;gap:5px;margin-bottom:14px}
+.dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--border);transition:all .25s;
+}
+.dot.aktiv{background:var(--ink);transform:scale(1.4)}
+.dot.ok{background:var(--green2)}
+.dot.fail{background:var(--red)}
+
+.task-card{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--r);padding:24px;
+  box-shadow:0 2px 12px rgba(0,0,0,.05);
+}
+.task-card h2{
+  font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;
+  color:var(--green);margin-bottom:8px;
+}
+.task-teksti{font-size:.9rem;line-height:1.75;color:var(--ink);margin-bottom:14px;white-space:pre-wrap}
+.vinkki{
+  display:flex;align-items:flex-start;gap:8px;
+  background:var(--blue-bg);border:1px solid rgba(26,86,219,.15);
+  border-radius:8px;padding:10px 12px;
+  font-size:.82rem;color:var(--blue);margin-bottom:14px;line-height:1.5;
+}
+.vinkki-icon{flex-shrink:0;font-size:1rem}
+
+/* ── MC ── */
+.mc-grid{display:flex;flex-direction:column;gap:7px;margin-bottom:8px}
+.mc-opt{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 14px;border-radius:8px;cursor:pointer;
+  border:1.5px solid var(--border);background:var(--bg);
+  font-size:.88rem;font-weight:500;transition:all .12s;
+}
+.mc-opt:hover:not(.locked){border-color:var(--ink);background:white}
+.mc-opt.ok{background:var(--green-bg);border-color:var(--green2);color:var(--green)}
+.mc-opt.fail{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.mc-opt.locked{cursor:default}
+.mc-letter{
+  width:26px;height:26px;border-radius:50%;
+  background:var(--border);color:var(--ink2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:600;
+  flex-shrink:0;transition:all .12s;
+}
+.mc-opt.ok .mc-letter{background:var(--green2);color:#fff}
+.mc-opt.fail .mc-letter{background:var(--red);color:#fff}
+
+/* ── DRAG-DROP JÄRJESTÄ ── */
+.sort-list{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}
+.sort-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;border-radius:8px;
+  background:var(--bg);border:1.5px solid var(--border);
+  cursor:grab;font-size:.87rem;font-weight:500;
+  transition:all .12s;user-select:none;
+}
+.sort-item:hover{border-color:var(--ink2);background:white}
+.sort-item.dragging{opacity:.4}
+.sort-item.over{border-color:var(--green2);background:var(--green-bg)}
+.drag-handle{color:var(--muted);font-size:.9rem;cursor:grab}
+.sort-item.correct{background:var(--green-bg);border-color:var(--green2);color:var(--green)}
+.sort-item.wrong{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+
+/* ── INPUT ── */
+.inp-group{margin-bottom:10px}
+.inp-label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:5px;letter-spacing:.3px}
+.inp{
+  width:100%;padding:10px 14px;
+  background:var(--bg);border:1.5px solid var(--border);
+  border-radius:8px;color:var(--ink);
+  font-family:'Space Grotesk',sans-serif;font-size:.9rem;
+  outline:none;transition:all .2s;
+}
+.inp:focus{border-color:var(--blue);background:white;box-shadow:0 0 0 3px rgba(26,86,219,.08)}
+.inp.ok{border-color:var(--green2);background:var(--green-bg);color:var(--green)}
+.inp.fail{border-color:var(--red);background:var(--red-bg);color:var(--red);animation:shake .35s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.inp-palaute{font-size:.78rem;font-weight:600;margin-top:4px;display:none}
+.inp-palaute.fail{display:block;color:var(--red)}
+
+/* ── SELITYS ── */
+.selitys{
+  margin-top:12px;padding:12px 14px;border-radius:8px;
+  background:var(--purple-bg);border:1px solid rgba(109,40,217,.15);
+  font-size:.83rem;line-height:1.6;color:var(--ink2);display:none;
+}
+.selitys.show{display:block}
+.selitys strong{color:var(--purple)}
+
+/* ── FEEDBACK POPUP ── */
+.overlay{position:fixed;inset:0;background:rgba(20,28,43,.5);z-index:400;display:none}
+.overlay.open{display:block}
+.popup{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(.88);
+  background:var(--card);border:2px solid var(--border);
+  border-radius:16px;padding:28px 36px;text-align:center;
+  z-index:401;box-shadow:0 20px 60px rgba(0,0,0,.18);
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  min-width:260px;
+  display:none;
+}
+.popup.open{display:block}
+.popup.open{transform:translate(-50%,-50%) scale(1)}
+.pop-emoji{font-size:2.8rem;margin-bottom:6px}
+.pop-title{font-family:'Syne',sans-serif;font-weight:800;font-size:1.4rem;margin-bottom:3px}
+.pop-pts{font-family:'JetBrains Mono',monospace;font-size:1.6rem;font-weight:600;color:var(--green);margin:.3rem 0}
+.pop-msg{font-size:.85rem;color:var(--muted)}
+
+/* ── BTNS ── */
+.btn-row{display:flex;align-items:center;justify-content:space-between;margin-top:18px;flex-wrap:wrap;gap:8px}
+.btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:9px 20px;border-radius:8px;border:none;
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.82rem;
+  cursor:pointer;transition:all .15s;letter-spacing:.2px;
+}
+.btn-check{background:var(--ink);color:#fff}
+.btn-check:hover{background:var(--ink2)}
+.btn-next{background:var(--green);color:#fff}
+.btn-next:hover{background:var(--green2);transform:translateY(-1px)}
+.btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--ink);color:var(--ink)}
+.btn-jatka{background:var(--green2);color:#fff;padding:10px 22px}
+.btn-jatka:hover{background:var(--green)}
+
+/* ── TEORIA MODAL ── */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(20,28,43,.6);
+  z-index:500;display:none;
+  align-items:center;justify-content:center;padding:16px;
+}
+.modal-bg.open{display:flex}
+.modal{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:28px;
+  max-width:620px;width:100%;
+  max-height:85vh;overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.15);
+  animation:popIn .25s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.modal h2{
+  font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;
+  color:var(--ink);margin-bottom:16px;
+  display:flex;align-items:center;gap:8px;
+}
+.tsec{margin-bottom:16px}
+.tsec h3{font-size:.88rem;font-weight:700;color:var(--ink);margin-bottom:6px;
+  font-family:'Syne',sans-serif}
+.tsec p,.tsec li{font-size:.85rem;color:var(--ink2);line-height:1.65}
+.tsec ul{padding-left:1.2rem;display:flex;flex-direction:column;gap:3px}
+.t-box{
+  padding:10px 14px;border-radius:6px;
+  font-size:.83rem;line-height:1.55;margin:.5rem 0;
+}
+.t-box.blue{background:var(--blue-bg);color:var(--blue);border-left:3px solid var(--blue)}
+.t-box.green{background:var(--green-bg);color:var(--green);border-left:3px solid var(--green2)}
+.t-box.yellow{background:var(--yellow-bg);color:var(--yellow);border-left:3px solid var(--yellow)}
+.t-box.red{background:var(--red-bg);color:var(--red);border-left:3px solid var(--red)}
+.modal-close-btn{
+  width:100%;padding:11px;background:var(--ink);color:#fff;
+  border:none;border-radius:8px;font-family:'Syne',sans-serif;
+  font-weight:700;font-size:.9rem;cursor:pointer;margin-top:6px;
+  transition:background .15s;
+}
+.modal-close-btn:hover{background:var(--ink2)}
+
+/* ── TULOKSET ── */
+.res-hero{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:16px;padding:32px;text-align:center;margin-bottom:16px;
+}
+.res-emoji{font-size:3rem;margin-bottom:8px}
+.res-pts{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:3.5rem;color:var(--green);line-height:1;
+}
+.res-max{font-size:1rem;color:var(--muted)}
+.res-rank{
+  display:inline-block;margin:8px 0 12px;
+  font-family:'JetBrains Mono',monospace;font-size:.75rem;
+  padding:5px 14px;border-radius:4px;
+  background:var(--purple-bg);color:var(--purple);
+  border:1px solid rgba(109,40,217,.2);
+}
+.res-viesti{font-size:.9rem;color:var(--muted);line-height:1.5}
+.res-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;
+}
+.rs-item{background:var(--bg);border-radius:8px;padding:12px;text-align:center}
+.rs-val{font-family:'Syne',sans-serif;font-weight:800;font-size:1.7rem;color:var(--ink)}
+.rs-lbl{font-size:.7rem;color:var(--muted);margin-top:2px}
+
+.osa-breakdown{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;
+}
+.ob-item{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:10px;padding:14px;text-align:center;
+}
+.ob-icon{font-size:1.6rem;margin-bottom:5px}
+.ob-nimi{font-size:.72rem;color:var(--muted);margin-bottom:4px}
+.ob-pts{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;color:var(--green)}
+.ob-max{font-size:.68rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+
+.copy-ok{
+  display:none;padding:10px 14px;border-radius:8px;
+  background:var(--green-bg);border:1px solid rgba(10,124,85,.2);
+  color:var(--green);font-size:.83rem;font-weight:700;
+  text-align:center;margin-bottom:12px;
+}
+.save-status{text-align:center;font-size:.78rem;color:var(--muted);margin-top:8px;min-height:18px}
+.res-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.rbtn{
+  padding:11px 22px;border-radius:8px;border:none;
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.82rem;
+  cursor:pointer;transition:all .15s;
+}
+.rbtn-green{background:var(--green);color:#fff}
+.rbtn-green:hover{background:var(--green2)}
+.rbtn-teal{background:#0d9488;color:#fff}
+.rbtn-teal:hover{background:#0f766e}
+.rbtn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--muted)}
+.rbtn-ghost:hover{border-color:var(--ink);color:var(--ink)}
+.rbtn-dark{background:var(--ink);color:#fff}
+.rbtn-dark:hover{background:var(--ink2)}
+
+/* ── CONFETTI ── */
+.cf{position:fixed;width:9px;height:9px;border-radius:2px;
+  animation:cfFall linear forwards;z-index:999;pointer-events:none}
+@keyframes cfFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+
+@media(max-width:620px){
+  .osa-grid,.res-stats,.osa-breakdown,.crit-grid,.level-grid{grid-template-columns:1fr}
+  .wrap{padding:20px 14px 60px}
+  .intro-hero{padding:24px}
+  .task-card{padding:18px}
+  .modal{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-logo">
+    <div class="tb-logo-icon">💻</div>
+    Digiympäristö
+  </div>
+  <div class="hud">
+    <div class="hud-chip pts">⭐ <span id="h-pts">0</span> p</div>
+    <div class="hud-chip streak">🔥 <span id="h-str">0</span></div>
+    <div class="hud-chip rank"><span id="h-rank">Diginoviisi</span></div>
+  </div>
+</div>
+<div class="xp-bar-wrap">
+  <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+</div>
+
+<!-- TEORIA MODAL -->
+<div class="modal-bg" id="modal-bg" onclick="suljeModalBg(event)">
+  <div class="modal" id="modal-body">
+    <button class="modal-close-btn" onclick="suljeModal()">✕ Sulje teoria</button>
+  </div>
+</div>
+
+<!-- POPUP -->
+<div class="overlay" id="overlay" onclick="suljePopup()"></div>
+<div class="popup" id="popup">
+  <div class="pop-emoji" id="pop-emoji">✅</div>
+  <div class="pop-title" id="pop-title">Oikein!</div>
+  <div class="pop-pts" id="pop-pts">+10 p</div>
+  <div class="pop-msg" id="pop-msg">Hyvä työ!</div>
+  <br>
+  <button class="btn btn-jatka" onclick="suljePopup()">Jatka ▶</button>
+</div>
+
+<!-- ══ INTRO ══════════════════════════════════════════════════════ -->
+<div class="screen active" id="s-intro">
+<div class="wrap">
+  <div class="intro-hero">
+    <div class="intro-tag">2 OSP · YTO-OPINNOT · Digiympäristö</div>
+    <h1 class="intro-h1">Toiminta <span>digitaalisessa</span><br>ympäristössä</h1>
+    <p class="intro-p">Harjoittele digiympäristön taitoja pelaten — tietoturva, tiedonhaku, Office-sovellukset ja vastuullinen someilu. Kolme haastetta, teoria ennen tehtäviä.</p>
+    <div class="crit-grid">
+      <div class="crit-item"><span class="crit-icon">🛡️</span>Digiturvallisuus ja tietosuoja</div>
+      <div class="crit-item"><span class="crit-icon">🔍</span>Tiedon haku ja luotettavuuden arviointi</div>
+      <div class="crit-item"><span class="crit-icon">💬</span>Viestipalvelut ja some vastuullisesti</div>
+      <div class="crit-item"><span class="crit-icon">💻</span>Tekstinkäsittely, taulukkolaskenta, esitysgrafiikka</div>
+      <div class="crit-item"><span class="crit-icon">⚖️</span>Tekijänoikeudet</div>
+      <div class="crit-item"><span class="crit-icon">☁️</span>Laitteet, sovellukset ja pilvipalvelut</div>
+    </div>
+    <div class="level-grid">
+      <div class="level-card"><div class="lc-emoji">🌱</div><div class="lc-nimi">Diginoviisi</div><div class="lc-pts">0–49 p</div></div>
+      <div class="level-card"><div class="lc-emoji">⚡</div><div class="lc-nimi">Digiharjoittelija</div><div class="lc-pts">50–99 p</div></div>
+      <div class="level-card"><div class="lc-emoji">🔐</div><div class="lc-nimi">Digitaituri</div><div class="lc-pts">100–149 p</div></div>
+      <div class="level-card"><div class="lc-emoji">🚀</div><div class="lc-nimi">Digiekspertti</div><div class="lc-pts">150–199 p</div></div>
+      <div class="level-card"><div class="lc-emoji">👑</div><div class="lc-nimi">Digilegenda</div><div class="lc-pts">200+ p</div></div>
+    </div>
+    <button class="btn-aloita" onclick="naytaOsat()">🚀 Aloita peli</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ OSA-VALINTA ══════════════════════════════════════════════ -->
+<div class="screen" id="s-osat">
+<div class="wrap">
+  <div class="section-h">Valitse osio 🗺️</div>
+  <div class="section-sub">Jokainen osio sisältää teoriakortit ja käytännön tehtäviä.</div>
+  <div class="osa-grid">
+    <div class="osa-card" onclick="aloitaOsa(0)" id="osa-card-0">
+      <div class="osa-icon">🛡️</div>
+      <div class="osa-nimi">Digiturvallisuus</div>
+      <div class="osa-desc">Tietoturva, salasanat, tietosuoja, huijaukset, tekijänoikeudet</div>
+      <div class="osa-pts">Max 90 pistettä</div>
+    </div>
+    <div class="osa-card" onclick="aloitaOsa(1)" id="osa-card-1">
+      <div class="osa-icon">🔍</div>
+      <div class="osa-nimi">Tiedon haku ja arviointi</div>
+      <div class="osa-desc">Hakukoneet, lähdekritiikki, some, disinformaatio</div>
+      <div class="osa-pts">Max 90 pistettä</div>
+    </div>
+    <div class="osa-card" onclick="aloitaOsa(2)" id="osa-card-2">
+      <div class="osa-icon">💻</div>
+      <div class="osa-nimi">Digitaaliset työkalut</div>
+      <div class="osa-desc">Office-sovellukset, laitteet, pilvi, viestipalvelut</div>
+      <div class="osa-pts">Max 90 pistettä</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ TEHTÄVÄ ══════════════════════════════════════════════════ -->
+<div class="screen" id="s-tehtava">
+<div class="wrap">
+  <div class="task-topbar">
+    <div class="task-meta">
+      <span class="task-nro" id="t-nro">OSA 1 · 1/9</span>
+      <span class="task-pts-badge" id="t-pts">+10 p</span>
+    </div>
+    <button class="btn-teoria" onclick="avaaTeoria()">📖 Teoria</button>
+  </div>
+  <div class="dots-row" id="dots-row"></div>
+  <div id="t-container"></div>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="takaisinOsiin()">← Osat</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-check" id="btn-check" onclick="tarkista()">✓ Tarkista</button>
+      <button class="btn btn-next"  id="btn-next"  onclick="seuraava()" style="display:none">Seuraava →</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ TULOKSET ══════════════════════════════════════════════════ -->
+<div class="screen" id="s-tulokset">
+<div class="wrap">
+  <div class="res-hero">
+    <div class="res-emoji" id="res-emoji">🎉</div>
+    <div class="res-pts" id="res-pts">0</div>
+    <div class="res-max" id="res-max">/ 0 pistettä</div>
+    <div class="res-rank" id="res-rank">🌱 Diginoviisi</div>
+    <p class="res-viesti" id="res-viesti">Hyvä alku!</p>
+    <div class="res-stats">
+      <div class="rs-item"><div class="rs-val" id="rs-ok">0</div><div class="rs-lbl">Oikein ✅</div></div>
+      <div class="rs-item"><div class="rs-val" id="rs-fail">0</div><div class="rs-lbl">Väärin ❌</div></div>
+      <div class="rs-item"><div class="rs-val" id="rs-streak">0</div><div class="rs-lbl">Paras putki 🔥</div></div>
+    </div>
+  </div>
+  <div class="osa-breakdown" id="osa-breakdown"></div>
+  <div class="copy-ok" id="copy-ok">✅ Tulokset kopioitu! Liitä Teamsiin opettajalle.</div>
+  <div class="res-btns">
+    <button class="rbtn rbtn-ghost" onclick="takaisinOsiin()">← Takaisin</button>
+    <button class="rbtn rbtn-green" onclick="kopioiTulokset()">📋 Kopioi tulokset</button>
+    <button class="rbtn rbtn-teal"  onclick="tallennaPASilent()">💾 Tallenna opettajalle</button>
+    <button class="rbtn rbtn-dark"  onclick="pelaaUudestaan()">🔄 Uusi peli</button>
+  </div>
+  <div class="save-status" id="save-status"></div>
+</div>
+</div>
+
+<script>
+'use strict';
+const PA_URL = 'https://default8fce65e3c62d4510b526ea15adf6e1.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c94eda05e7ef48459efa04deda8f48c3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=VmvVedwjy2f2p1bq0IyS2QIr2boktZTaVzKYqowoEJI';
+
+// ─────────────────────────────────────────────────────────────
+// TEORIASISÄLTÖ
+// ─────────────────────────────────────────────────────────────
+const TEORIAT = [
+{
+  otsikko: '🛡️ Digiturvallisuus — teoria',
+  html: `
+  <div class="tsec">
+    <h3>Vahva salasana</h3>
+    <p>Hyvä salasana on vähintään 12 merkkiä pitkä ja sisältää isoja ja pieniä kirjaimia, numeroita sekä erikoismerkkejä.</p>
+    <div class="t-box green">✅ Hyvä: K0ir@Juoks3e!Mets@ss@ (pitkä, sekava)<br>❌ Huono: koira123 (lyhyt, arvattava)</div>
+    <p style="margin-top:6px"><strong>Eri tileille eri salasana</strong> — jos yksi vuotaa, muut pysyvät turvassa. Salasananhallintaohjelma (esim. Bitwarden, 1Password) auttaa muistamisessa.</p>
+  </div>
+  <div class="tsec">
+    <h3>Kaksivaiheinen tunnistus (2FA)</h3>
+    <p>Salasanan lisäksi vaaditaan toinen todiste: tekstiviesti, sovellus (Google Authenticator) tai fyysinen avain. Ota käyttöön kaikilla tärkeillä tileillä!</p>
+    <div class="t-box blue">💡 2FA estää sisäänpääsyn vaikka salasana olisi vuotanut.</div>
+  </div>
+  <div class="tsec">
+    <h3>Tietojenkalastelu (phishing)</h3>
+    <p>Huijausviestit näyttävät aidoilta (pankki, posti, työnantaja) mutta yrittävät saada salasanasi tai henkilötietosi.</p>
+    <div class="t-box red">🚨 Varoitusmerkit: kiireellisyys ("toimita heti!"), outous lähettäjässä, linkit joihin ei tunnistu, kirjoitusvirheet, pyyntö antaa salasana tai pankkitunnukset.</div>
+    <p style="margin-top:6px">Oikea pankki tai virasto <strong>ei koskaan</strong> pyydä salasanaa sähköpostitse!</p>
+  </div>
+  <div class="tsec">
+    <h3>GDPR ja tietosuoja</h3>
+    <p>GDPR (General Data Protection Regulation) on EU:n tietosuoja-asetus. Se antaa sinulle oikeuden tietää mitä tietoja sinusta kerätään ja pyytää niiden poistamista.</p>
+    <div class="t-box blue">💡 Evästeet: verkkosivut pyytävät lupaa seurata sinua. Voit aina kieltäytyä ei-välttämättömistä evästeistä.</div>
+  </div>
+  <div class="tsec">
+    <h3>Tekijänoikeudet</h3>
+    <p>Tekijänoikeus syntyy automaattisesti teoksen luojalle — kuviin, teksteihin, musiikkiin, videoihin. Käyttäminen ilman lupaa on laitonta.</p>
+    <div class="t-box green">✅ Vapaasti käytettäviä: Creative Commons -lisenssit, Pixabay, Unsplash, Wikipedia (tarkista lisenssi)<br>❌ Ei saa käyttää: Google-kuvahaun kuvat suoraan, artistien musiikki ilman lupaa</div>
+  </div>`
+},
+{
+  otsikko: '🔍 Tiedon haku ja arviointi — teoria',
+  html: `
+  <div class="tsec">
+    <h3>Tehokas tiedon haku</h3>
+    <p>Hakukoneet palauttavat parhaiten osuvat tulokset hakusanojesi perusteella. Tarkenna hakua:</p>
+    <div class="t-box blue">💡 "lainausmerkit" = etsii täsmälleen kyseinen lause<br>site:hs.fi aihe = hakee vain Helsingin Sanomista<br>-sana = jättää pois tulokset joissa kyseinen sana</div>
+  </div>
+  <div class="tsec">
+    <h3>Lähteen luotettavuuden arviointi</h3>
+    <p>Arvioi aina: <strong>SIFT-menetelmä</strong></p>
+    <ul>
+      <li><strong>S</strong>top — pysähdy ennen jakamista</li>
+      <li><strong>I</strong>nvestigate the source — kuka julkaisi, miksi?</li>
+      <li><strong>F</strong>ind better coverage — löytyykö sama tieto muualta?</li>
+      <li><strong>T</strong>race claims — jäljitä alkuperäinen lähde</li>
+    </ul>
+    <div class="t-box green">✅ Luotettavia: .fi/.gov/.edu-sivustot, tieteelliset julkaisut, viralliset organisaatiot (THL, Tilastokeskus)<br>⚠️ Tarkista: some-jaot, blogit, anonyymit sivustot</div>
+  </div>
+  <div class="tsec">
+    <h3>Disinformaatio ja valeuutiset</h3>
+    <p>Valeuutiset leviävät somessa nopeasti, koska ne herättävät tunteita. Keinoja tunnistaa:</p>
+    <div class="t-box yellow">⚠️ Klikkiotsikot: "Et usko mitä tapahtui!"<br>Ei päivämäärää tai lähdettä<br>Tieto löytyy vain yhdestä paikasta<br>Kuva ei vastaa tekstin sisältöä (tarkista Google Lens)</div>
+  </div>
+  <div class="tsec">
+    <h3>Some vastuullisesti</h3>
+    <p>Ennen julkaisemista mieti: <strong>ARA-testi</strong></p>
+    <ul>
+      <li><strong>A</strong>ito — onko tieto totta?</li>
+      <li><strong>R</strong>elevanssi — onko se tarpeellista jakaa?</li>
+      <li><strong>A</strong>siallinen — kohtelisitko niin kasvokkain?</li>
+    </ul>
+    <div class="t-box red">🚨 Muista: internet ei unohda. Julkinen kuva tai viesti voi löytyä vuosien päästä — myös työnantajalle.</div>
+  </div>
+  <div class="tsec">
+    <h3>Tekoäly ja kriittinen ajattelu</h3>
+    <p>Tekoäly (ChatGPT, Copilot jne.) voi tuottaa virheellistä tietoa joka kuulostaa uskottavalta (ns. hallusinaatio). Tarkista aina tärkeät faktat luotettavasta lähteestä.</p>
+    <div class="t-box blue">💡 Tekoäly on apuväline, ei lähde. Käytä sitä ideoiden kehittelyyn, mutta tarkista faktat aina erikseen.</div>
+  </div>`
+},
+{
+  otsikko: '💻 Digitaaliset työkalut — teoria',
+  html: `
+  <div class="tsec">
+    <h3>Office-sovellukset — milloin mitäkin?</h3>
+    <div class="t-box blue">📝 <strong>Word / Google Docs</strong> — tekstiasiakirjat, raportit, kirjeet, hakemukset<br>📊 <strong>Excel / Google Sheets</strong> — taulukot, laskut, budjetti, data<br>📋 <strong>PowerPoint / Google Slides</strong> — esitykset, diat, visuaalinen materiaali</div>
+    <p style="margin-top:6px">Valitse sovellus tehtävän mukaan — älä kirjoita esitystä Wordiin tai tee budjettia PowerPointiin.</p>
+  </div>
+  <div class="tsec">
+    <h3>Tiedostomuodot</h3>
+    <p>Eri tiedostomuodot sopivat eri tarkoituksiin:</p>
+    <div class="t-box green">✅ .pdf — jakaminen, tulostaminen (ei muokkaannu helposti)<br>.docx — Word-asiakirja (muokattava)<br>.xlsx — Excel-taulukko<br>.jpg/.png — kuvat (jpg pienempi, png laadukkaampi)<br>.mp4 — video</div>
+  </div>
+  <div class="tsec">
+    <h3>Pilvipalvelut ja varmuuskopiointi</h3>
+    <p>Pilvipalvelut tallentavat tiedostot internetiin jolloin ne ovat saatavilla mistä tahansa. Esimerkkejä: OneDrive, Google Drive, Dropbox.</p>
+    <div class="t-box yellow">⚠️ 3-2-1 varmuuskopiointisääntö: 3 kopiota, 2 eri tallennusvälineellä, 1 pilvipalvelussa.</div>
+    <div class="t-box blue">💡 Työnantajan pilvipalveluun tallennetut tiedostot ovat työnantajan omaisuutta — älä tallenna sinne henkilökohtaisia tiedostoja.</div>
+  </div>
+  <div class="tsec">
+    <h3>Viestipalvelut työssä</h3>
+    <p>Teams, Slack, sähköposti — valitse oikea kanava:</p>
+    <div class="t-box green">✅ Sähköposti — viralliset viestit, liitteet, dokumentointi<br>Teams/Slack — nopeat kysymykset tiimin sisällä<br>Puhelu — kiireelliset asiat, monimutkaiset keskustelut</div>
+    <div class="t-box red">🚨 Työviestipalveluissa viestit voivat tallentua — käyttäydy kuin kaikki kollegasi näkisivät viestisi.</div>
+  </div>
+  <div class="tsec">
+    <h3>Turvallinen laitteen käyttö</h3>
+    <ul>
+      <li>Lukitse näyttö aina kun poistut tietokoneelta (Win+L)</li>
+      <li>Älä käytä julkista WiFiä ilman VPN:ää</li>
+      <li>Pidä käyttöjärjestelmä ja sovellukset päivitettyinä</li>
+      <li>Älä liitä tuntematonta USB-tikkua tietokoneeseen</li>
+    </ul>
+  </div>`
+}
+];
+
+// ─────────────────────────────────────────────────────────────
+// TEHTÄVÄDATA — 3 osiota × 9 tehtävää
+// ─────────────────────────────────────────────────────────────
+const OSAT = [
+// ── OSA 0: DIGITURVALLISUUS ────────────────────────────────────
+{ nimi:'Digiturvallisuus', icon:'🛡️', tehtavat:[
+  {
+    otsikko:'Vahva salasana',
+    teksti:'Sinun pitää valita uusi salasana työsähköpostitilillesi.\n\nMikä seuraavista on turvallisin?',
+    vinkki:'Hyvä salasana on pitkä, sisältää erikoismerkkejä eikä ole arvattavissa.',
+    selitys:'Paras salasana on pitkä ja satunnainen. "K0ir@Juoks3e!2024" on 18 merkkiä ja sisältää isoja/pieniä kirjaimia, numeroita ja erikoismerkkejä. "koira2024" on lyhyt ja arvattava. Lyhyet "vahvat" salasanat voivat murtua sekunneissa tietokoneella.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['koira2024','Kissa!','K0ir@Juoks3e!2024','SALASANA'],
+    oikeinIdx:2,
+  },
+  {
+    otsikko:'Kaksivaiheinen tunnistus',
+    teksti:'Kirjaudut töissä käytettyyn pilvipalveluun uudelta laitteelta. Salasanan jälkeen palvelu pyytää koodia tekstiviestillä.\n\nMitä tämä tarkoittaa?',
+    vinkki:'Ajattele: mitä tapahtuu, jos joku varastaa salasanasi?',
+    selitys:'Kaksivaiheinen tunnistus (2FA) tarkoittaa, että pelkkä salasana ei riitä — tarvitaan myös toinen todiste (tekstiviesti, sovellus, sormenjälki). Vaikka hakkeri saisi salasanasi, hän ei pääse sisään ilman puhelintasi.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Tilisi on hakkeroitu','Kaksivaiheinen tunnistus on käytössä — hyvä asia','Palvelu on rikki','Sinulla on väärä salasana'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Tietojenkalastelu',
+    teksti:'Saat sähköpostin:\n\n"Hyvä asiakas! Pankkitilisi on lukittu epäilyttävän toiminnan vuoksi. Klikkaa HETI tästä linkistä ja anna tunnukset: www.nordea-turvallinen.fi.mega.ru"\n\nMitä teet?',
+    vinkki:'Katso linkin osoitetta tarkasti. Normaali pankin osoite on nordea.fi — mikä tässä on erikoista?',
+    selitys:'Tämä on phishing-huijaus. Merkkejä: kiireellisyys ("HETI"), epäilyttävä osoite (.mega.ru ei ole pankin osoite), pyyntö antaa tunnukset sähköpostissa. Oikea pankki ei koskaan pyydä tunnuksia sähköpostilinkistä. Oikea toiminta: poista viesti ja ilmoita pankille.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Klikkaan linkin ja kirjaudun sisään','Lähetän tunnukseni sähköpostilla pankille','Poistan viestin ja ilmoitan pankille','Vastaan viestiin ja pyydän lisätietoja'],
+    oikeinIdx:2,
+  },
+  {
+    otsikko:'GDPR ja evästeet',
+    teksti:'Avaat verkkosivun ensimmäistä kertaa ja ruudulle tulee viesti: "Käytämme evästeitä parantaaksemme käyttökokemustasi. Hyväksy kaikki / Muokkaa asetuksia / Hylkää kaikki"\n\nMitkä evästeet on aina turvallista hyväksyä ilman lisäharkintaa?',
+    vinkki:'Mieti mikä on sivuston toiminnan kannalta välttämätöntä.',
+    selitys:'Välttämättömät (tekniset) evästeet pitävät sivuston toiminnassa — ne on aina turvallista hyväksyä. Markkinointievästeet seuraavat käyttäytymistäsi eri sivustoilla mainostusta varten. Analytiikkaevästeet keräävät käyttötilastoja. Sinulla on GDPR:n nojalla oikeus kieltäytyä muista kuin välttämättömistä evästeistä.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Kaikki evästeet — ne vain parantavat kokemusta','Vain välttämättömät (tekniset) evästeet','Markkinointievästeet — ne ovat käteviä','Ei mitään — sulje sivu heti'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Tekijänoikeus — kuvan käyttö',
+    teksti:'Teet töissä PowerPoint-esityksen. Haluat lisätä siihen kuvan. Googlet "aurinko kuva" ja löydät hienon kuvan ensimmäisenä hakutuloksena.\n\nMitä sinun pitää tehdä ennen kuvan käyttöä?',
+    vinkki:'Kuka omistaa Google-haun kuvan?',
+    selitys:'Google-haun kuvat eivät ole vapaasti käytettäviä — ne ovat kuvaajan tai yrityksen omaisuutta. Ennen käyttöä: tarkista lisenssi, pyydä lupa tai käytä vapaasti käytettäviä kuvalähteitä kuten Unsplash, Pixabay tai Pexels. Työkäytössä väärä kuva voi johtaa tekijänoikeusrikkomukseen.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Käytän sen suoraan — se on hakutuloksessa joten se on vapaata','Tarkistan kuvan lisenssin ja pyydän luvan tai käytän vapaata kuvalähdettä','Laitan kuvan alle lähteeksi "Google"','Pienennän kuvan jotta kukaan ei huomaa'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Salasanan jakaminen',
+    teksti:'Kollega pyytää sinua puhelimessa antamaan oman työsähköpostisi salasanan, koska hän sanoo tarvitsevansa sen "IT-huollon vuoksi".\n\nMitä teet?',
+    selitys:'Oikea IT-tuki ei koskaan pyydä salasanaa puhelimitse tai sähköpostilla. Tämä on sosiaalisen manipuloinnin (social engineering) yritys — huijari esiintyy IT-tukena. Jos olet epävarma, soita IT-osastolle suoraan virallisesta puhelinluettelosta.',
+    vinkki:'Muistele: pyytääkö oikea IT-tuki koskaan salasanaa?',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Annan salasanan — kollega tietää mitä tekee','Kieltäydyn ja soitan IT-osastolle virallista kautta','Annan salasanan tekstiviestillä — se on turvallisempaa','Vaihdan salasanan ja annan uuden'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Julkinen WiFi',
+    teksti:'Olet kahvilassa ja haluat tarkistaa työsähköpostisi puhelimella. Kahvilalla on avoin WiFi "KahvilaNopea_Free".\n\nMitä sinun tulisi tehdä?',
+    selitys:'Avoimissa WiFi-verkoissa kaikki liikenne voi olla seurattavissa — salasanat, sähköpostit, pankkitiedot. Turvallisia vaihtoehtoja: käytä VPN:ää (kryptaa yhteyden), käytä puhelimen mobiilidata-yhteyttä (4G/5G), tai odota kunnes olet suojatussa verkossa. Tärkeintä: älä koskaan käytä pankkipalveluita avoimessa WiFissä ilman VPN:ää.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Liityn vapaasti — kahvila on luotettava','Liityn WiFiin ja käytän VPN:ää tai käytän mobiilidataa','Käytän WiFiä mutta en avaa sähköpostia','Julkinen WiFi on yhtä turvallinen kuin kotiverkko'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Tietoturvaloukkaus',
+    teksti:'Huomaat, että työtietokoneeltasi on kadonnut kansio jossa oli asiakastietoja. Epäilet, että tietokoneesi on saanut haittaohjelman.\n\nMissä järjestyksessä toimit?',
+    selitys:'Oikea toimintajärjestys: (1) Katkaise internet-yhteys heti — tämä estää haittaohjelmaa lähettämästä tietoja eteenpäin. (2) Ilmoita IT-osastolle — älä yritä korjata itse. (3) Älä käytä konetta ennen kuin se on tarkistettu. Tietoturvaloukkaus pitää ilmoittaa myös tietosuojaviranomaiselle (Tietosuojavaltuutettu) 72 tunnin sisällä jos henkilötietoja on vaarantunut.',
+    pisteet:15, tyyppi:'mc',
+    vaihtoehdot:['Jatkan töitä — ehkä se korjaantuu itsestään','Katkaise internet, ilmoita IT:lle ja älä käytä konetta','Sammutan koneen ja poistan haittaohjelman itse','Vaihdan salasanat ja toivon parasta'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Oikea vai väärä?',
+    teksti:'Arvioi nämä väittämät:\n\nA) "Vahva salasana riittää turvaamiseen — 2FA on tarpeeton"\nB) "Työnantajan laitteella voi käyttää henkilökohtaisia some-palveluita vapaasti"\nC) "Tekijänoikeus koskee myös kuvia ja musiikkia — ei vain tekstejä"\n\nMikä väittämä on OIKEIN?',
+    selitys:'C on oikein. Tekijänoikeus koskee kaikkia teoksia: kuvia, musiikkia, videoita, tekstejä ja ohjelmakoodia. A on väärin: 2FA on tärkeä lisäsuoja. B on väärin: työnantajan laitteella on oma käyttöpolitiikka, henkilökohtainen käyttö voi olla kielletty tai tallentua.',
+    vinkki:'Mieti jokainen väittämä erikseen — mikä on ristiriidassa teorian kanssa?',
+    pisteet:15, tyyppi:'mc',
+    vaihtoehdot:['A — 2FA on tarpeeton','B — työnantajan laitetta voi käyttää vapaasti','C — tekijänoikeus koskee kaikkia teoksia','Kaikki ovat oikein'],
+    oikeinIdx:2,
+  },
+]},
+// ── OSA 1: TIEDON HAKU JA ARVIOINTI ──────────────────────────
+{ nimi:'Tiedon haku ja arviointi', icon:'🔍', tehtavat:[
+  {
+    otsikko:'Hakukoneen käyttö',
+    teksti:'Etsit tietoa uusimmista koronarokotesuosituksista Suomessa.\n\nMikä hakustrategia antaa luotettavimman tuloksen?',
+    vinkki:'Mieti kuka on paras tiedonlähde terveyteen liittyvissä asioissa.',
+    selitys:'Paras lähde on THL (thl.fi) — virallinen suomalainen terveydenhuollon asiantuntijaorganisaatio. Hakeminen suoraan site:thl.fi-komennolla tai thl.fi-osoitteesta vie suoraan oikeaan lähteeseen. Some ja blogit eivät ole luotettavia terveysinformaatiolähteitä — ne voivat sisältää vanhentunutta tai virheellistä tietoa.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Haen "rokotteet" Facebookista — siellä on paljon kokemuksia','Avaan thl.fi tai haen "rokotussuositukset site:thl.fi"','Luen ensimmäisen blogitekstin hakutuloksissa','Katson YouTube-videon aiheesta'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Lähteen arviointi — SIFT',
+    teksti:'Löydät uutisen: "Uusi tutkimus: Kahvi aiheuttaa syöpää!"\nLähde: terveysuutiset24.blogspot.com\nEi päivämäärää, ei kirjoittajaa, ei viittausta alkuperäistutkimukseen.\n\nMitä teet SIFT-menetelmän mukaan?',
+    vinkki:'SIFT = Stop, Investigate, Find better coverage, Trace claims.',
+    selitys:'SIFT-menetelmä: S=Pysähdy ennen jakamista. I=Tutustu lähteeseen (blogspot ei ole tieteellinen julkaisu). F=Etsi sama tieto muualta (löytyykö tieteellisistä lehdistä tai THL:stä?). T=Jäljitä väite alkuperäiseen tutkimukseen. Tässä tapauksessa puuttuu päivämäärä, kirjoittaja ja lähde — älä jaa!',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Jaan heti — tärkeää terveystietoa!','Pysähdyn, tutkin lähteen ja etsin tukea muista lähteistä ennen jakamista','Uskon — blogit ovat yleensä luotettavia','Kommentoin artikkelia ja pyydän lähdettä'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Valokuvan todenperäisyys',
+    teksti:'Somessa leviää järkyttävä kuva väitetysti tapahtuneesta onnettomuudesta Suomessa. Kuva saa paljon jakoja.\n\nMiten voit tarkistaa onko kuva aito?',
+    selitys:'Google Lens tai TinEye ovat käänteisiä kuvahauja — ne etsivät mistä kuva on peräisin ja milloin se on julkaistu ensimmäisen kerran. Jos sama kuva löytyy vuosia vanhana tai toisesta maasta, se on väärennetty konteksti. Tämä on yleinen disinformaatiotapa: aito kuva + väärä teksti = valeuutinen.',
+    vinkki:'Kuvan alkuperä voidaan tarkistaa teknisesti — miten?',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Jaan sen — monta ihmistä on jo jakanut, joten se on totta','Käytän Google Lens tai TinEye käänteistä kuvahakua tarkistaakseni kuvan alkuperän','Kommentoin "ei onnistu" ja jatkan eteenpäin','Katson onko kuva terävä — sumennetut kuvat ovat yleensä vääriä'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Wikipedia lähteenä',
+    teksti:'Kirjoitat koulutehtävää ja löydät hyvän Wikipedia-artikkelin aiheesta.\n\nMiten Wikipediaa käytetään oikein lähteenä?',
+    selitys:'Wikipedia on erinomainen lähtökohta tiedonhakuun, mutta sitä ei saa käyttää ainoana lähteenä tärkeässä tekstissä — kuka tahansa voi muokata sitä. Oikea tapa: käytä Wikipediaa löytämään aiheesta tietoa ja siirrä sitten artikkelin loppuun lähdeluetteloon — sieltä löydät oikeat lähteet joita voi käyttää.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Käytän Wikipediaa pääasiallisena lähteenä — se on aina oikein','Käytän Wikipediaa aloituspisteenä ja seuraan sen lähteitä alkuperäisiin julkaisuihin','En käytä Wikipediaa lainkaan — se on aina epäluotettava','Kopioin tekstin suoraan — se on julkinen'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Yksityisyys ja some',
+    teksti:'Olet lomailee ja julkaiset somessa kuvan jossa näkyy selvästi hotellisi ja huoneesi numero. Lisäät tekstin: "Täällä yksin viikon verran! Koti tyhjillään 🏠"\n\nMikä on tässä julkaisussa ongelmallista?',
+    selitys:'Julkaisu kertoo samaan aikaan: (1) olet poissa kotoa, (2) koti on tyhjillään, (3) missä olet ja kuinka kauan. Tämä on arvokas tieto murtovarkaalle. Sosiaalinen media on julkinen tila — älä kerro milloin olet poissa kotoa tai matkustat yksin. Aseta myös tilit yksityisiksi julkisen sijaan.',
+    vinkki:'Ajattele kuka KAIKKEA näkee julkaisun.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Ei mitään — on mukava jakaa lomakuulumisia','Julkaisu paljastaa kotisi olevan tyhjillään, mikä voi houkutella varkaita','Hotellin numero pitäisi piilottaa tietosuojan takia','Yksin matkustamista ei saa kertoa somessa'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Tekoäly tiedonlähteenä',
+    teksti:'Kysyt ChatGPT:ltä: "Mikä on Suomen pääministeri tällä hetkellä?"\nChatGPT antaa vastauksen varmuudella.\n\nMitä sinun pitää muistaa tässä tilanteessa?',
+    selitys:'Tekoälymallien tieto on rajattu niiden koulutuspäivämäärään — ne eivät tiedä tämän hetken tapahtumia. Lisäksi tekoäly voi "hallusinoida" eli keksiä uskottavalta kuulostavan mutta väärän vastauksen. Tarkista aina ajankohtaiset faktat (kuten poliittiset tilanteet) uutislähteistä tai virallisista sivustoista.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Luotan vastaukseen — tekoäly on aina ajan tasalla','Muistan, että tekoälyn tieto voi olla vanhentunutta tai virheellistä — tarkistan asian ajankohtaisesta lähteestä','Kopioin vastauksen suoraan esitykseeni','Tekoäly on parempi lähde kuin Wikipedia'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Someviesti ja työnhaku',
+    teksti:'Haet töitä. Työnantaja Googlee nimesi ennen haastattelua ja löytää vanhan somejulkaisusi jossa olet päihtynyt ja kirjoitat loukkaavia kommentteja.\n\nMitä tämä opettaa?',
+    selitys:'Työnantajat googlaavat hakijat — tämä on yleistä. Some-julkaisut voivat vaikuttaa työllistymiseen vuosia myöhemmin. Digitaalinen jalanjälki (kaikki mitä olet tehnyt verkossa) on pysyvä. Vinkkejä: aseta tilit yksityisiksi, google oma nimesi säännöllisesti, poista tai piilota arveluttava materiaali, rakenna positiivinen digiidentiteetti (LinkedIn).',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Ei mitään — työnantajilla ei ole oikeutta googleta hakijoita','Digitaalinen jalanjälki on pysyvä — somekäyttäytyminen vaikuttaa työllistymiseen','Poistan tilin kokonaan — se on paras ratkaisu','Tämä on yksityisyysloukkaus, voin valittaa'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Lisenssin tunnistus',
+    teksti:'Löydät kuvan Unsplash-palvelusta. Kuvalla on merkintä "CC0 (Public Domain)".\n\nMitä tämä tarkoittaa käytännössä?',
+    selitys:'CC0 (Public Domain / nolla-lisenssi) tarkoittaa, että tekijä on luopunut kaikista oikeuksistaan — kuvaa saa käyttää vapaasti mihin tahansa tarkoitukseen, kaupallisestikin, ilman lupaa tai mainintaa. Muita lisenssejä: CC BY = käytä vapaasti mutta mainitse tekijä. CC NC = vain ei-kaupalliseen käyttöön. All Rights Reserved = kaikki oikeudet pidätetty, pyydä lupa.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Kuva on suojattu — ei saa käyttää','Kuva on vapaasti käytettävissä mihin tahansa tarkoitukseen','Kuva on ilmainen mutta vain yksityiseen käyttöön','Pitää maksaa ennen kuin voi käyttää'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Kokonaisuuden kertaus',
+    teksti:'Olet saanut tehtäväksi kouluprojektia varten hakea tietoa ilmastonmuutoksesta ja lisätä esitykseen kuvan.\n\nMikä toimintatapa on kokonaisuudessaan oikein?',
+    selitys:'Oikea toimintatapa: (1) Hakee tieteellisestä/virallisesta lähteestä (IPCC, Ilmatieteenlaitos) — ei vain ensimmäisestä hakutuloksesta. (2) Käyttää CC0-kuvaa Unsplashista — vapaasti käytettävä. (3) Merkitsee lähteet näkyviin. Tämä on sekä luotettavaa tiedonhakua että tekijänoikeuksien noudattamista.',
+    vinkki:'Mieti sekä tiedon luotettavuus että kuvien käyttöoikeudet.',
+    pisteet:15, tyyppi:'mc',
+    vaihtoehdot:['Hakee Googlesta, kopioi ensimmäisen artikkelin ja käyttää Google-haun kuvaa','Hakee IPCC:n tai Ilmatieteen laitoksen sivuilta, käyttää CC0-kuvaa Unsplashista ja merkitsee lähteet','Käyttää tekoälyä kaiken kirjoittamiseen ja ottaa kuvan Facebookista','Kopioi Wikipediasta kokonaan ja lisää Googlen kuvan'],
+    oikeinIdx:1,
+  },
+]},
+// ── OSA 2: DIGITAALISET TYÖKALUT ─────────────────────────────
+{ nimi:'Digitaaliset työkalut', icon:'💻', tehtavat:[
+  {
+    otsikko:'Oikea sovellus tehtävään',
+    teksti:'Sinun pitää luoda:\nA) Kuukauden myyntiraportti numeroilla ja kaavioilla\nB) Kirje asiakkaalle\nC) Esitys tiimipalaveriin\n\nYhdistä sovellus ja tehtävä:\n• Excel / Google Sheets\n• Word / Google Docs\n• PowerPoint / Google Slides\n\nMikä yhdistelmä on oikein?',
+    vinkki:'Ajattele: millä sovelluksella käsitellään numeroita? Millä tehdään diat?',
+    selitys:'Excel = taulukot ja laskut (myyntiraportti). Word = tekstiasiakirjat (kirje). PowerPoint = esitykset (tiimipalaveriesitys). Yleisin virhe: tehdään numeroita sisältävä raportti Wordiin tai esitys Exceliin — se tekee työstä hankalampaa kuin tarpeellista.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['A=Word, B=PowerPoint, C=Excel','A=Excel, B=Word, C=PowerPoint','A=PowerPoint, B=Excel, C=Word','Kaikki onnistuvat kaikilla — ei väliä'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Tiedostomuoto jakamiseen',
+    teksti:'Lähetät valmiin CV:si työnantajalle sähköpostilla. Haluat, että se näyttää samanlaiselta kaikilla laitteilla eikä muutu vahingossa.\n\nMissä muodossa lähetät tiedoston?',
+    selitys:'PDF on paras muoto jakamiseen: se näyttää täsmälleen samalta kaikilla laitteilla ja käyttöjärjestelmillä, eikä vastaanottaja voi vahingossa muokata sitä. .docx voi näyttää eri tavalla eri Word-versioissa. Word-tiedosto on hyvä kun haluat vastaanottajan muokkaavan sitä.',
+    vinkki:'Mikä muoto säilyttää ulkoasun kaikilla laitteilla?',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['.docx — Word-tiedosto','.pdf — PDF-tiedosto','.txt — tekstitiedosto','.pptx — PowerPoint'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Pilvipalvelu — varmuuskopiointi',
+    teksti:'Opiskelutehtäväsi tallentuvat vain tietokoneen kovalevylle. Tietokone hajoaa — kaikki häviää.\n\nMikä olisi ollut paras tapa suojata tiedostot?',
+    selitys:'3-2-1 -sääntö: 3 kopiota, 2 eri tallennusvälineellä, 1 pilvessä. Käytännössä: tallenna aina myös OneDriveen/Google Driveen. Pilvipalvelu varmuuskopioi automaattisesti — kovalevyn hajoaminen ei tuhoa tiedostoja. Lisäbonus: pääset tiedostoihin mistä tahansa laitteesta.',
+    vinkki:'3-2-1-sääntö: 3 kopiota, 2 eri paikkaan, 1 pilvessä.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Tallentaa useita versioita samalle kovalevylle','Tallentaa OneDriveen/Google Driveen pilvipalveluun','Lähettää sähköpostilla itselleen kerran viikossa','Tulostaa kaikki paperille'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Teams-viesti työssä',
+    teksti:'Olet työkaverin kanssa Teams-chatissa. Kirjoitat turhautuneena: "Tää projektijohtaja on täysi idiootti, kukaan ei tiedä mitä tekee 🤦"\n\nMikä on tässä ongelmallista?',
+    selitys:'Työviestipalveluiden viestit tallentuvat — IT-osasto, esihenkilöt ja jopa oikeudenkäynneissä viestit voidaan kaivaa esiin. Lisäksi kanava voi olla laajempi kuin luulet. Tyytymättömyys johdetaan esille asiallisesti kasvokkain tai esihenkilölle — ei kirjallisesti työviestipalvelussa. Kirjoita aina kuin kaikki kollegasi näkisivät viestin.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Ei mitään — yksityisviestit ovat luottamuksellisia','Työsähköpostiviestit tallentuvat ja voivat tulla muiden tietoon — kirjoita kuin esimies lukisi','Emojin käyttö on epäammattillista','Tiimi-kanavaa ei saisi käyttää epäviralliseen viestintään'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Ohjelmistopäivitykset',
+    teksti:'Tietokoneesi pyytää Windows-päivitystä jo kolmatta kertaa. Klikkaat "Muistuta huomenna" koska päivitys kestää.\n\nMiksi päivitykset pitäisi tehdä nopeasti?',
+    selitys:'Ohjelmistopäivitykset sisältävät usein tietoturvakorjauksia — ne paikkavat haavoittuvuuksia, joita hakkerit voivat hyödyntää. Vanhentunut käyttöjärjestelmä on kuin lukitsematon ovi. Hyvä käytäntö: aseta automaattiset päivitykset päälle ja tee ne heti kun mahdollista — myös mobiililaitteille.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Ei mitään syytä kiirehtiä — päivitykset ovat valinnaisia','Päivitykset sisältävät tietoturvakorjauksia — vanhentunut järjestelmä on haavoittuvainen','Päivitykset parantavat vain ulkonäköä','Microsoft pakottaa päivittämään myydäkseen uusia versioita'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Oikea viestintäkanava',
+    teksti:'Sinun pitää:\nA) Lähettää virallinen tarjous asiakkaalle liitetiedoston kanssa\nB) Kysyä kollegalta pikainen kysymys lounaaseen liittyen\nC) Sopia tärkeä neuvottelu johdon kanssa\n\nMikä kanava on oikea mihinkin?',
+    selitys:'A = Sähköposti: virallisuus, liitetiedostot, dokumentointi. B = Teams/Slack pikakysymys: nopeus, epävirallisuus. C = Sähköposti + kalenteri: virallinen sopiminen, dokumentointi tärkeistä päätöksistä. Väärän kanavan käyttö aiheuttaa sekaannuksia: pikaviestin kautta sovittu neuvottelu voi unohtua, sähköpostilla lähetetty pikainen kysymys hukkuu.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['A=Teams, B=Sähköposti, C=Puhelu','A=Sähköposti, B=Teams/pikaviesti, C=Sähköposti+kalenteri','A=Puhelu, B=Sähköposti, C=Teams','Kaikki kanavat ovat yhtä hyviä'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Excel-kaava',
+    teksti:'Sinulla on Excel-taulukossa myyntiluvut soluissa B2:B8. Haluat laskea kaikkien lukujen summan soluun B9.\n\nMikä kaava on oikein?',
+    selitys:'=SUMMA(B2:B8) on oikea Excel-kaava kokonaissumman laskemiseen. Kaavat alkavat aina = -merkillä. SUMMA() laskee alueen luvut yhteen. B2:B8 tarkoittaa alue solusta B2 soluun B8. Muita hyödyllisiä kaavoja: =KESKIARVO(alue), =LASKE(alue), =MAKS(alue), =MIN(alue).',
+    vinkki:'Excel-kaavat alkavat aina = -merkillä.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['SUMMA(B2:B8)','=SUM(B2-B8)','=SUMMA(B2:B8)','=LASKE(B2;B8)'],
+    oikeinIdx:2,
+  },
+  {
+    otsikko:'USB-tikku löytynyt',
+    teksti:'Löydät parkkipaikalta USB-tikun. Olet utelias mitä siinä on.\n\nMitä sinun EI pidä tehdä?',
+    selitys:'Tuntematon USB-tikku on yksi yleisimmistä haittaohjelmatartunnan tavoista — joskus ne jätetään tarkoituksella löydettäviksi. Haittaohjelma voi aktivoitua heti kun tikku liitetään. Oikea toiminta: jätä tikku löytäneeseen paikkaan tai vie se poliisille, tai jos se on työssä: anna IT-osastolle tutkittavaksi turvallisesti.',
+    pisteet:15, tyyppi:'mc',
+    vaihtoehdot:['Liitän sen työkoneeseen ja katson sisällön — löytöesine kuuluu palauttaa','En liitä sitä mihinkään — tuntematon USB voi sisältää haittaohjelman','Liitän sen henkilökohtaiseen puhelimeeni — se on turvallisempaa','Muotoilen tikun — se poistaa haittaohjelmat'],
+    oikeinIdx:1,
+  },
+  {
+    otsikko:'Digiturvallinen työtila',
+    teksti:'Lähdet lounaalle toimistolta. Tietokoneesi näyttö on päällä ja sähköpostisi auki.\n\nMitä sinun pitää tehdä ennen poistumista?',
+    selitys:'Win+L (Windows) tai Cmd+Ctrl+Q (Mac) lukitsee näytön välittömästi. Lukitsematon tietokone on turvallisuusriski: vieras pääsee lukemaan sähköpostisi, avaamaan tiedostosi tai käyttämään tiliäsi. Tämä pätee myös lyhyille poissaoloille. Aseta myös automaattinen lukitus 5 minuutin jälkeen varmuuden vuoksi.',
+    pisteet:10, tyyppi:'mc',
+    vaihtoehdot:['Ei mitään — toimisto on turvallinen paikka','Lukitsen näytön (Win+L) ennen poistumista','Suljetaan vain sähköpostiohjelma','Sammutetaan näyttö — riittää'],
+    oikeinIdx:1,
+  },
+]},
+];
+
+// ─────────────────────────────────────────────────────────────
+// TASOT
+// ─────────────────────────────────────────────────────────────
+const TASOT = [
+  {nimi:'Diginoviisi',     emoji:'🌱', min:0},
+  {nimi:'Digiharjoittelija',emoji:'⚡',min:50},
+  {nimi:'Digitaituri',    emoji:'🔐', min:100},
+  {nimi:'Digiekspertti',  emoji:'🚀', min:150},
+  {nimi:'Digilegenda',    emoji:'👑', min:200},
+];
+const TASO_MAX = 270;
+
+// ─────────────────────────────────────────────────────────────
+// PELITILA
+// ─────────────────────────────────────────────────────────────
+let G = {
+  pts:0, streak:0, best:0, ok:0, fail:0,
+  osa:0, tehtava:0, vastattu:false,
+  osatDone:[false,false,false],
+  osaPts:[0,0,0],
+  dots:[[],[],[]],
+};
+
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+
+// ─────────────────────────────────────────────────────────────
+// UI HELPERS
+// ─────────────────────────────────────────────────────────────
+function nayta(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s-'+id).classList.add('active');
+}
+function nykyTaso(){
+  let t=TASOT[0];
+  for(const x of TASOT) if(G.pts>=x.min) t=x;
+  return t;
+}
+function paivitaHUD(){
+  const t=nykyTaso();
+  document.getElementById('h-pts').textContent=G.pts;
+  document.getElementById('h-str').textContent=G.streak;
+  document.getElementById('h-rank').textContent=t.emoji+' '+t.nimi;
+  const seur=TASOT.find(x=>x.min>G.pts);
+  const min=t.min, max=seur?seur.min:TASO_MAX;
+  const pct=Math.min(100,Math.round((G.pts-min)/(max-min)*100));
+  document.getElementById('xp-fill').style.width=pct+'%';
+}
+
+// ─────────────────────────────────────────────────────────────
+// TEORIA
+// ─────────────────────────────────────────────────────────────
+function avaaTeoria(){
+  const t=TEORIAT[G.osa];
+  document.getElementById('modal-body').innerHTML=
+    `<h2>${t.otsikko}</h2>${t.html}<button class="modal-close-btn" onclick="suljeModal()">✕ Sulje teoria</button>`;
+  document.getElementById('modal-bg').classList.add('open');
+}
+function suljeModalBg(e){if(e.target===document.getElementById('modal-bg'))suljeModal();}
+function suljeModal(){document.getElementById('modal-bg').classList.remove('open');}
+
+// ─────────────────────────────────────────────────────────────
+// NAVIGOINTI
+// ─────────────────────────────────────────────────────────────
+function naytaOsat(){nayta('osat');paivitaOsaCards();}
+function takaisinOsiin(){nayta('osat');paivitaOsaCards();}
+function paivitaOsaCards(){
+  G.osatDone.forEach((d,i)=>{
+    const c=document.getElementById('osa-card-'+i);
+    if(c) c.classList.toggle('done',d);
+  });
+}
+function aloitaOsa(idx){G.osa=idx;G.tehtava=0;nayta('tehtava');renderTehtava();}
+
+// ─────────────────────────────────────────────────────────────
+// TEHTÄVÄ
+// ─────────────────────────────────────────────────────────────
+let mcVal=-1;
+function renderTehtava(){
+  G.vastattu=false;mcVal=-1;
+  const osa=OSAT[G.osa];
+  const t=osa.tehtavat[G.tehtava];
+  const total=osa.tehtavat.length;
+
+  document.getElementById('t-nro').textContent=`${osa.nimi.toUpperCase()} · ${G.tehtava+1}/${total}`;
+  document.getElementById('t-pts').textContent=`+${t.pisteet} p`;
+  document.getElementById('btn-check').style.display='inline-flex';
+  document.getElementById('btn-next').style.display='none';
+
+  // Dots
+  const row=document.getElementById('dots-row');
+  row.innerHTML='';
+  const states=G.dots[G.osa];
+  for(let i=0;i<total;i++){
+    const d=document.createElement('div');
+    const st=states[i]||'open';
+    d.className='dot'+(i===G.tehtava?' aktiv':st==='ok'?' ok':st==='fail'?' fail':'');
+    row.appendChild(d);
+  }
+
+  // Build MC
+  const shuffledIdxs=shuffle([...Array(t.vaihtoehdot.length).keys()]);
+  // store mapping: displayed position -> original index
+  window._mcMap=shuffledIdxs;
+  const mcHtml=shuffledIdxs.map((origIdx,dispIdx)=>`
+    <div class="mc-opt" id="mc-${dispIdx}" onclick="valitseMC(${dispIdx},${origIdx})">
+      <div class="mc-letter">${String.fromCharCode(65+dispIdx)}</div>
+      <span>${t.vaihtoehdot[origIdx]}</span>
+    </div>`).join('');
+
+  const vinkki=t.vinkki?`<div class="vinkki"><div class="vinkki-icon">💡</div><div>${t.vinkki}</div></div>`:'';
+  const teksti=t.teksti.replace(/\n/g,'<br>');
+
+  document.getElementById('t-container').innerHTML=`
+    <div class="task-card">
+      <h2>${t.otsikko}</h2>
+      <div class="task-teksti">${teksti}</div>
+      ${vinkki}
+      <div class="mc-grid">${mcHtml}</div>
+      <div class="selitys" id="selitys"></div>
+    </div>`;
+}
+
+function valitseMC(dispIdx,origIdx){
+  if(G.vastattu) return;
+  mcVal=origIdx; // store original index
+  window._mcDispIdx=dispIdx;
+  document.querySelectorAll('.mc-opt').forEach(el=>el.classList.remove('sel-active'));
+  document.getElementById('mc-'+dispIdx).classList.add('sel-active');
+  tarkista();
+}
+
+function tarkista(){
+  if(G.vastattu) return;
+  if(mcVal<0) return;
+  G.vastattu=true;
+
+  const t=OSAT[G.osa].tehtavat[G.tehtava];
+  const ok=(mcVal===t.oikeinIdx);
+  const map=window._mcMap||[];
+
+  // Mark all options
+  document.querySelectorAll('.mc-opt').forEach((el,dispIdx)=>{
+    el.classList.add('locked');
+    const origIdx=map[dispIdx];
+    if(origIdx===t.oikeinIdx) el.classList.add('ok');
+    else if(dispIdx===window._mcDispIdx&&!ok) el.classList.add('fail');
+  });
+
+  G.dots[G.osa][G.tehtava]=ok?'ok':'fail';
+  if(ok){G.pts+=t.pisteet;G.ok++;G.streak++;if(G.streak>G.best)G.best=G.streak;G.osaPts[G.osa]+=t.pisteet;}
+  else{G.fail++;G.streak=0;}
+
+  paivitaHUD();
+
+  // Selitys
+  const sb=document.getElementById('selitys');
+  if(sb&&t.selitys){
+    sb.innerHTML=`<strong>${ok?'✅ Oikein!':'❌ Ei ihan.'}</strong> ${t.selitys}`;
+    sb.classList.add('show');
+  }
+
+  naytaPopup(ok,t.pisteet);
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='inline-flex';
+}
+
+function seuraava(){
+  suljePopup();
+  const osa=OSAT[G.osa];
+  G.tehtava++;mcVal=-1;
+  if(G.tehtava>=osa.tehtavat.length){
+    G.osatDone[G.osa]=true;
+    naytaTulokset();
+  } else {
+    renderTehtava();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// POPUP
+// ─────────────────────────────────────────────────────────────
+const MSGS=['Loistavaa!','Hienoa!','Täydellinen!','Nappiin!','Olet digiammattilainen!'];
+function naytaPopup(ok,pts){
+  const streak=G.streak>1?` 🔥 ${G.streak} putki!`:'';
+  document.getElementById('pop-emoji').textContent=ok?(pts>=15?'🌟':'✅'):'💪';
+  document.getElementById('pop-title').textContent=ok?(pts>=15?'Erinomainen!':'Oikein!'):'Ei ihan';
+  document.getElementById('pop-pts').textContent=ok?`+${pts} p`:'+0 p';
+  document.getElementById('pop-msg').textContent=ok?MSGS[Math.floor(Math.random()*MSGS.length)]+streak:'Selitys näkyy tehtäväkortissa.';
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('popup').classList.add('open');
+  if(ok&&pts>=10) setTimeout(confetti,200);
+}
+function suljePopup(){
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('popup').classList.remove('open');
+}
+
+// ─────────────────────────────────────────────────────────────
+// TULOKSET
+// ─────────────────────────────────────────────────────────────
+function naytaTulokset(){
+  const t=nykyTaso();
+  const total=G.ok+G.fail;
+  const pct=total>0?Math.round(G.ok/total*100):0;
+  const maxPts=OSAT.reduce((a,o)=>a+o.tehtavat.reduce((b,t)=>b+t.pisteet,0),0);
+  let emoji='🌱',viesti='Hyvä alku! Lue teoriat ennen tehtäviä.';
+  if(pct>=90){emoji='🏆';viesti='Hämmästyttävää! Olet digiympäristön mestari!';}
+  else if(pct>=75){emoji='🚀';viesti='Erittäin hyvä! Digitaitosi ovat erinomaisella tasolla.';}
+  else if(pct>=60){emoji='💪';viesti='Hyvä työ! Teorioita kertaamalla pääset vielä parempaan.';}
+
+  document.getElementById('res-emoji').textContent=emoji;
+  document.getElementById('res-pts').textContent=G.pts;
+  document.getElementById('res-max').textContent=`/ ${maxPts} pistettä`;
+  document.getElementById('res-rank').textContent=`${t.emoji} ${t.nimi}`;
+  document.getElementById('res-viesti').textContent=viesti;
+  document.getElementById('rs-ok').textContent=G.ok;
+  document.getElementById('rs-fail').textContent=G.fail;
+  document.getElementById('rs-streak').textContent=G.best;
+
+  document.getElementById('osa-breakdown').innerHTML=OSAT.map((o,i)=>{
+    const max=o.tehtavat.reduce((a,t)=>a+t.pisteet,0);
+    return `<div class="ob-item">
+      <div class="ob-icon">${o.icon}</div>
+      <div class="ob-nimi">${o.nimi}</div>
+      <div class="ob-pts">${G.osaPts[i]}</div>
+      <div class="ob-max">/ ${max} p</div>
+    </div>`;
+  }).join('');
+
+  nayta('tulokset');
+  if(pct>=75) setTimeout(confetti,300);
+}
+
+// ─────────────────────────────────────────────────────────────
+// TALLENNUS
+// ─────────────────────────────────────────────────────────────
+function kopioiTulokset(){
+  const t=nykyTaso();
+  const total=G.ok+G.fail;
+  const pct=total>0?Math.round(G.ok/total*100):0;
+  const maxPts=OSAT.reduce((a,o)=>a+o.tehtavat.reduce((b,t)=>b+t.pisteet,0),0);
+  const pvm=new Date().toLocaleDateString('fi-FI');
+  const klo=new Date().toLocaleTimeString('fi-FI',{hour:'2-digit',minute:'2-digit'});
+  const osaLines=OSAT.map((o,i)=>{
+    const max=o.tehtavat.reduce((a,t)=>a+t.pisteet,0);
+    return `  ${o.icon} ${o.nimi}: ${G.osaPts[i]} / ${max} p`+(G.osatDone[i]?' ✅':' ⏳');
+  }).join('\n');
+
+  const txt=`📋 TOIMINTA DIGITAALISESSA YMPÄRISTÖSSÄ — TULOKSET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📅 ${pvm} klo ${klo}
+
+⭐ Pisteet:       ${G.pts} / ${maxPts} p
+🏆 Taso:          ${t.emoji} ${t.nimi}
+✅ Oikein:        ${G.ok} / ${total} (${pct}%)
+❌ Väärin:        ${G.fail}
+🔥 Paras putki:   ${G.best}
+
+📚 OSA-ALUEET:
+${osaLines}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+  navigator.clipboard.writeText(txt).then(()=>{
+    document.getElementById('copy-ok').style.display='block';
+    setTimeout(()=>{document.getElementById('copy-ok').style.display='none';},4000);
+  }).catch(()=>prompt('Kopioi (Ctrl+A → Ctrl+C):',txt));
+}
+
+async function tallennaPASilent(){
+  document.getElementById('save-status').textContent='Tallennetaan...';
+  const nimi=prompt('Kirjoita nimesi tallennusta varten:','');
+  if(!nimi){document.getElementById('save-status').textContent='';return;}
+  const t=nykyTaso();
+  const total=G.ok+G.fail;
+  const pct=total>0?Math.round(G.ok/total*100):0;
+  const maxPts=OSAT.reduce((a,o)=>a+o.tehtavat.reduce((b,t)=>b+t.pisteet,0),0);
+  try{
+    const res=await fetch(PA_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        koodi:nimi,pisteet:G.pts,maxPisteet:maxPts,
+        oikein:G.ok,vaarin:G.fail,bestStreak:G.best,
+        taso:t.nimi,prosentti:pct,
+        digiturvallisuus:G.osaPts[0],
+        tiedonhaku:G.osaPts[1],
+        digitaalisettyokalut:G.osaPts[2],
+        paivitetty:new Date().toLocaleString('fi-FI'),
+      }),
+    });
+    document.getElementById('save-status').textContent=
+      res.ok?`✅ Tallennettu opettajalle — ${nimi}`:`⚠️ Tallennus epäonnistui (${res.status}) — käytä Kopioi-painiketta.`;
+  }catch(e){
+    document.getElementById('save-status').textContent='⚠️ Verkkovirhe — käytä Kopioi tulokset -painiketta.';
+  }
+}
+
+function pelaaUudestaan(){
+  G={pts:0,streak:0,best:0,ok:0,fail:0,osa:0,tehtava:0,vastattu:false,
+    osatDone:[false,false,false],osaPts:[0,0,0],dots:[[],[],[]]};
+  paivitaHUD();nayta('intro');
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONFETTI
+// ─────────────────────────────────────────────────────────────
+function confetti(){
+  const cols=['#0a7c55','#1a56db','#6d28d9','#b45309','#0d9488','#f59e0b'];
+  for(let i=0;i<40;i++){
+    const el=document.createElement('div');
+    el.className='cf';
+    el.style.cssText=`left:${Math.random()*100}vw;top:-20px;
+      background:${cols[Math.floor(Math.random()*cols.length)]};
+      width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      animation-duration:${1.5+Math.random()*2}s;
+      animation-delay:${Math.random()*.5}s;`;
+    document.body.appendChild(el);
+    el.addEventListener('animationend',()=>el.remove());
+  }
+}
+
+// Init
+paivitaHUD();
+</script>
+</body>
+</html>
